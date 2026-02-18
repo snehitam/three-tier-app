@@ -6,15 +6,29 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Build Docker Image
-        run: echo "Docker build step placeholder"
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy Step
-        run: echo "Deployment step placeholder"
+      - name: ACR Login
+        run: az acr login --name snehitar2026
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t snehitar2026.azurecr.io/frontend:latest ./frontend
+          docker push snehitar2026.azurecr.io/frontend:latest
+
+      - name: Set AKS Context
+        run: az aks get-credentials --resource-group aks-rg --name aks-cluster
+
+      - name: Restart Frontend Deployment
+        run: kubectl rollout restart deployment frontend
